@@ -3,10 +3,9 @@ from bs4 import BeautifulSoup
 import requests
 
 if __name__=="__main__":
-    target = "https://www.biqukan.com/1_1094/5403177.html"
+    target = "https://www.biqukan.com/2_2932/1286972.html"
     req = requests.get(target)
-    html = req.text
-    bf = BeautifulSoup(html)
-    texts = bf.find_all("div",id="content")
-    v1 = texts[0].text.replace('         ', '\n')#.encode("iso-8859-1")
-    print(v1)
+    html = BeautifulSoup(req.text)
+    text = html.find_all("div",id="content")
+    text = text[0].text.replace('\xa0'*8,'\n\n').encode("iso-8859-1").decode('gbk')
+    print(text)
