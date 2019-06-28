@@ -1,6 +1,6 @@
 # -*- coding:UTF-8 -*-
 from bs4 import BeautifulSoup
-import requests , sys , os
+import requests , sys , os , time , random
 
 class novel_downloader(object):
     def __init__(self):
@@ -31,22 +31,60 @@ class novel_downloader(object):
             self.urls.append(self.base+ele.get('href'))
     
     def get_content(self):
-        for i in range(5):
-            req = requests.get(self.urls[i])
+        for i in range(self.cnt):
             chap = self.chapter[i]
-            html = BeautifulSoup(req.text)
-            text = html.find_all("div",id="content")
-            text = text[0].text.replace('\xa0'*8,'\n\n').encode("iso-8859-1").decode('gbk')
-            self.write_file(chap,text)
-            sys.stdout.write("  已下载:%.3f%%" %  float(i/self.cnt) + '\r')
-            sys.stdout.flush()
-            
-    def write_file(self,chapter,text):
-        path = '/mnt/c/ProjectSpace/download/'+self.title
+            path = self.get_path(chap)
+            if not os.path.exists(path):
+                req = requests.get(self.urls[i])
+                html = BeautifulSoup(req.text)
+                content = html.find_all("div",id="content")
+                text = content[0].text.replace('\xa0'*8,'\n\n')
+                text = text.replace('\xa0','')
+                while True:
+                    try:
+                        text = text.encode("iso-8859-1").decode('gbk')
+                        break
+                    except UnicodeEncodeError as err:
+                        err_str = str(err)
+                        print(err_str)
+                        idx1 = err_str.find('position ')+9
+                        idx2 = err_str.find(': ',idx1)
+                        err_idx = err_str[idx1:idx2]
+                        try:
+                            err_idx = int(err_idx)
+                            text = text[0:err_idx-1]+' '+text[err_idx+1:len(text)]
+                        except ValueError as err2:
+                            
+                        
+                text = text[0:text.find('[笔趣')]
+                
+                self.write_file(path,chap,text)
+                sys.stdout.write("  已下载  "+chap+"    %.3f%%  " %  float(i/self.cnt) + '\r\n')
+                #except UnicodeEncodeError as err:
+                ##'gbk' codec can't encode character '\ufffd' in position 2: illegal multibyte sequence
+                #    err_str = str(err)
+                #    err_idx = err_str[err_str.find('position ')+9:err_str.find(': illegal')]
+                #    err_idx = int(err_idx)
+                #    text = text[0:err_idx-1]+' '+text[err_idx+1:len(text)]
+                #    self.write_file(path,chap,text)
+                #    sys.stdout.write("  已下载  "+chap+"    %.3f%%  " %  float(i/self.cnt) + '\r\n')
+                #    #sys.stdout.write("    "+chap+"  下载失败，非法字符  " + '\r\n')
+                #if i%10 == 0:
+                #    time.sleep(random.uniform(5,10))
+                #else:
+                #    time.sleep(random.uniform(1,20)*0.1)
+                sys.stdout.flush()
+            else:
+                sys.stdout.write("  "+chap+"  已存在  \r\n")
+    
+    def get_path(self,chapter):
+        path = 'D:/Workspaces/python_learning/download/'+self.title
         if not os.path.exists(path):
-            os.makedirs(path)    
-        with open(path+'/'+chapter+".txt",'w',encoding='gbk') as f:
-            f.write(chapter + '\n')
+            os.makedirs(path)
+        return path+'/'+chapter+".txt"
+    
+    def write_file(self,path,chapter,text):
+        with open(path,'w',encoding = 'gbk') as f:
             f.writelines(text)
             f.write('\n\n')
 
